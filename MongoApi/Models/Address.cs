@@ -7,7 +7,7 @@ namespace MongoApi.Models
     {
 
         [BsonElement("building")]
-        public int Building { get; set; }
+        public string Building { get; set; }
 
         [BsonElement("coord")]
         public double[] Coord { get; set; }

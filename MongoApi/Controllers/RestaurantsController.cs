@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
+using Microsoft.Ajax.Utilities;
 using MongoApi.Models;
 
 using MongoDB.Bson;
@@ -39,9 +40,18 @@ namespace MongoApi.Controllers
         /// <param name="restaurant">The restaurant.</param>
         public async Task Post(Restaurant restaurant)
         {
-            var document = CreateBson(restaurant) ?? GetSampleDocument();
             var collection = Database.GetCollection<Restaurant>("restaurants");
             await collection.InsertOneAsync(restaurant);
+        }
+
+        [HttpGet]
+        [Route("api/Restaurants")]
+        public async Task<IEnumerable<Restaurant>> GetByName(string name)
+        {
+            var collection = Database.GetCollection<Restaurant>("restaurants");
+            var filter = Builders<Restaurant>.Filter.Regex(x=>x.Name, new BsonRegularExpression(name+".*", "i"));
+            var result = await collection.Find(filter).ToListAsync();
+            return RestUtil.Response(result);
         }
 
         [HttpGet]
@@ -50,62 +60,8 @@ namespace MongoApi.Controllers
         {
             var collection = Database.GetCollection<Restaurant>("restaurants");
             var filter = Builders<Restaurant>.Filter.Eq(x=>x.RestaurantId, id.ToString());
-            var result = collection.Find(filter).ToList();
-            return result.FirstOrDefault();
-        }
-
-        [HttpGet]
-        [Route("api/Restaurants/Get/{id}")]
-        public async Task<string> GetById2(long id)
-        {
-            var collection = Database.GetCollection<BsonDocument>("restaurants");
-            var filter = Builders<BsonDocument>.Filter.Eq("restaurant_id", id.ToString());
-            //                                                         restaurant_id
-//            var filter = Builders<BsonDocument>.Filter.Eq("borough", "Manhattan");
-//          var result = await collection.Find(filter).ToListAsync();
-            var result = collection.Find(filter).FirstOrDefault();
-            return result?.ToString();
-        }
-
-        public static BsonDocument CreateBson<T>(T source)
-        {
-            return BsonDocument.Create(source);
-        }
-
-        private static BsonDocument GetSampleDocument()
-        {
-            return new BsonDocument
-            {
-                {
-                    "address", new BsonDocument
-                    {
-                        {"street", "2 ave"},
-                        {"zipcode", "55444"},
-                        {"building", "3660"},
-                        {"coord", new BsonArray {-93.4, 45.003}}
-                    }
-                },
-                {"borough", "Uptown"},
-                {"cuisine", "Italian"},
-                {
-                    "grades", new BsonArray
-                    {
-                        new BsonDocument
-                        {
-                            {"date", DateTime.Parse("10/1/14 0:0:0 +0")},
-                            {"grade", "A"},
-                            {"score", 11}
-                        },
-                        new BsonDocument
-                        {
-                            {"date", DateTime.Parse("6/1/14 0:0:0 +0")},
-                            {"grade", "B"},
-                            {"score", 17}
-                        }
-                    }
-                },
-                {"name", "Vella"},
-            };
+            var result = await collection.Find(filter).FirstOrDefaultAsync();
+            return RestUtil.Response(result);
         }
 
         /// <summary>
